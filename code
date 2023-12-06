@@ -1,0 +1,41 @@
+# Load data 
+time <- c(...)
+titers <- matrix(c(...), nrow=6, byrow=TRUE) 
+
+# Log transformation
+logs <- log10(titers)  
+
+# Calculate means and reductions 
+means <- rowMeans(logs)
+reds <- means - means[1]  
+
+# Plot data
+matplot(time, reds, pch=16, xlab="Time(hours)", 
+        ylab="Log Reduction", xlim=c(0,350), ylim=c(-5,1))
+abline(h=-1, lty=2, col="red")
+
+# Model fitting and prediction manually 
+m <- lm(reds[-1] ~ time[-1])
+coef <- coef(m)
+pred_times <- seq(0,350,length=336)
+preds <- coef[1] + coef[2]*pred_times
+lines(pred_times, preds) 
+
+# Find T90
+t90_ind <- which.min(abs(preds+1))  
+t90 <- pred_times[t90_ind]
+
+# 95% Confidence intervals
+err <- qt(0.975,4)*summary(m)$coef[2,2] 
+t90_lo <- (t90 - (-1 - err))/coef[2]
+t90_hi <- (t90 - (-1 + err))/coef[2]
+
+# Plot estimate with error bar
+arrows(t90_lo, -1, t90_hi, -1, length=0.05, angle=90, code=3)
+points(t90, -1, col="darkgreen", pch=16)
+
+# Add labels
+text(t90, -1.5 , paste("T90 =", round(t90,2)), pos=4) 
+
+err_label <- paste("\u00B1", round((t90_hi-t90_lo),2))
+text(t90, -2, err_label, pos=4)
